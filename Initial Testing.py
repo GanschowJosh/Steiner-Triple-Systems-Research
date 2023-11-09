@@ -17,9 +17,10 @@ def is_steiner_triple_system(points, triples):
     # Return True if all checks passed
     return True
 
-# Example of a valid Steiner triple system of order 7
-points = [1, 2, 3, 4, 5, 6, 7]
-triples = [{1, 2, 3}, {1, 4, 5}, {1, 6, 7}, {2, 4, 6}, {2, 5, 7}, {3, 4, 7}, {3, 5, 6}]
+# Example of a valid Steiner triple system of order 9
+points = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+triples = [{1,2,3},{4,5,6},{7,8,9},{1,4,7},{2,5,8},{3,6,9},{1,5,9},{2,6,7},{3,4,8},{1,6,8},{2,4,9},{3,5,7}]	
+
 print(is_steiner_triple_system(points, triples)) # True
 
 # Example of an invalid Steiner triple system of order 8

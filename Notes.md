@@ -32,3 +32,20 @@ where *b* is the number of blocks. Similar reasoning about t-element subsets con
 $r = ((n-1)C(t-1))/((k-1)C(t-1)) = ((n-t+1) ... (n-2)(n-1))/((k-t+1) ... (k-2)(k-1))$
 
 where *r* is the number of blocks containing any given element. From these definitions follows the equation $bk = rn$. It is a necessary condition for the existence of S(t, k, n) that *b* and *r* are integers. As with any block design, [Fisher's inequality](https://en.wikipedia.org/wiki/Fisher%27s_inequality) $b >= n$ is true in Steiner systems.
+
+# From *The Handbook of Combinatorial Designs*
+
+**Theorem** An STS(*v*) ((*v*, 3, 1) BIBD) exists if and only if *v* ≡ 1,3 (mod 6)
+
+**Remark** There are many different proofs of this theorem. The Reverend Thomas P. Kirkman first proved it in 1847 (six years before Steiner posed the question of their existence); Kirkman's solution is recursive. A proof by direct construction is known as Skolem sequences. An elementary recursive proof employs a *v* → 2*v* + 1 construction and a *v* → 2*v* + 7 construction, along with an STS(3), and STS(9) and an STS(13).
+
+**Theorem** An STS(*v*) whose [automorphism](https://en.wikipedia.org/wiki/Automorphism) group contains a (cyclic) automorphism of order *v* exists if and only if *v* ≡ 1,3 (mod 6) and *v* != 9.
+
+**Theorem** A Kirkman triple system of order *v* exists for all positive integers *v* ≡ 3 (mod 6). 
+> If (V, B) is an STS(v), W ⊆ V , D = {B ∈ B : B ⊆ W}, and (W, D) is a Steiner
+triple system, then (W, D) is a subsystem of (V, B).
+
+**Theorem** (Doyen-Wilson) if *v*, *w* ≡ 1, 3 (mod 6) and *v* ≥ *w* ≥ 1, then there is a STS(*v*) containing a subsystem of order *w* if and only if *v* = *w* or v ≥ 2*w* + 1.
+> A large set of STS(v), v ≡ 1, 3 (mod 6), is a partition of the set of all vC3 3-subsetsof v elements into v − 2 STS(v).
+
+**Theorem** (Lu-Teirlinck) A large set of STS(*v*) exists if and only if *v* ≡ 1,3 (mod 6) and *v* != 7.
