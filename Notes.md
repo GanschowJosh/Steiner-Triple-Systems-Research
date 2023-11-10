@@ -105,3 +105,182 @@ else:
 The heuristic SWITCH constructs a candidate block, {x, y, z} to the system, increasing the size by one. If only two of the three pairs are live, then we add the new block and remove another block {w, y, z} (the unique block containing the pair {y, z}), so the size stays the same.
 
 Here now is the hill climbing algorithm, which keeps applying the heuristic SWITH until a Steiner triple system is finally constructed. The variable NumBlocks records the size of the PSTS(*v*) during the course of the algorithm. 
+
+```
+global NumBlocks
+NumBlocks = 0
+V = {1, ..., v}
+B = NULL
+while NumBlocks < v(v-1)/6:
+    do SWITCH
+output (V, B)
+```
+
+There is of course no guarantee that the algorithm will ever terminate. But if the choices made by the heuristic SWITCH are random, it seems in practice that the algorithm always terminates successfully by constructing an STS(*v*), and it usually runs very quickly.
+
+### Implementation Details
+
+When we implement the algorithm, it is advantageous to maintain a table (or array) of all the live points. This table does not need to be ordered. When a point ceases to live, the last point in the table can be moved to occupy its place. If a *dead point* becomes live, it is added to the end of the table. In order ot make these updating operations efficient (and to eliminate the need for linear searches of this table), we also need an indexing array, which keeps track of the position of every element in the first table.
+
+In a similar fashion, we will maintain for each live point *x* a table of all the points *y* such that {x, y} is a live pair. Also, for each such table, we have an indexing array. 
+
+This we will have two arrays of length *v*, which we call *LivePoints* and *IndexLivePoints*, and a variable *NumLivePoints*. We have three further arrays which we call *LivePairs*, *IndexLivePairs* and *NumLivePairs*. Each element of *LivePairs* and *IndexLivePairs* is an array of length *v*.
+
+We need one more array, which we name *Other*. For each pair of distinct points {x, y}, this array keeps track of the "other point" in a block containing *x* and *y*. More formally, for any PSTS(*v*), say (V, B), and for any $x, y ∈ V (x != y)$, we define $Other[x,y] = z$ if and only if ${x, y, z} ∈ B$ (and $Other[x, y]$ is undefined if $x, y$ is a live pair).
+
+With the use of the array *Other*, it is unnecessary to explicitly keep track of the block set B during the course of the algorithm. At the end of the algorithm, is is straighforward to compute B from other. This is done by the procedure ConstructBlocks, as shown below
+
+```
+B = []
+for x in range(1, v):
+    for y in range(x+1, v):
+        z = Other[x,y]
+        if z > y:
+            B = B U {{x, y, z}}
+return B
+```
+
+An initialization of the arrays is performed at the beginning of the hill-climbing algorithm, as follows:
+
+```
+global NumLivePoints
+global LivePoints[x], IndexLivePoints[x], x = 1, 2, ldots, v
+global NumLivePairs[x], x = 1,2, ..., v
+global LivePairs[x, y], Other[x, y], x=1,2,...,v, y=1,2,...,v
+NumLivePoints = v
+for x in range(1, v):
+    LivePoints[x] = x
+    IndexLivePoints[x] = x
+    NumLivePairs[x] = v - 1
+    for y in range(1, v-1):
+        LivePairs[x,y] = ((y+x-1)%v)+1
+    for y in range(1, v):
+        IndexLivePairs[x,y] = (y-x)%v
+        Other[x,y] = 0
+```
+
+It will be necessary to perform "insert" and "delete" operations on these arrays. Thus we define InsertPair and DeletePair as follows.
+
+InsertPair(x,y)
+
+```
+global NumLivePoints
+global LivePoints[x], IndexLivePoints[x], x = 1,2,...,v
+global NumLivePairs[x], x = 1, 2,...,v
+global LivePairs[x,y], x = 1,2,...,v, y = 1,2,...,v
+if NumLivePairs[x] == 0:
+    NumLivePoints += 1
+    LivePoints[NumLivePoints] = x
+    IndexLivePoints[x] = NumLivePoints
+NumLivePairs[x] = NumLivePairs[x]+1
+posn = NumLivePairs[x]
+livePairs[x, posn] = y
+IndexLivePairs[x,y] = posn
+```
+
+DeletePair(x,y)
+
+```
+global NumLivePoints
+global LivePoints[x], IndexLivePoints[x], x = 1, 2,...,v
+global NumLivePairs[x], x = 1,2,...,v
+global LivePairs[x,y], x = 1,2,...,v,y=1,2,...,v
+posn = IndexLivePairs[x,y]
+num = NumLivePairs[x]
+z = LivePairs[x, num]
+LivePairs[x,posn] = z
+IndexLivePairs[x,z] = posn
+LivePairs[x,num] = 0
+IndexLivePairs[x,y] = 0
+NumLivePairs[x] -= 1
+if NumLivePairs[x] = 0:
+    posn = IndexLivePoints[x]
+    z = LivePoints[NumLivePoints]
+    LivePoints[posn] = z
+    IndexLivePoints[z] = posn
+    LivePoints[NumLivePoints] = 0
+    NumLivePoints += 1
+```
+
+These two procedures are used in two higher-level procedures called AddBlock and ExchangeBlock
+
+AddBlock(x,y,z)
+
+```
+external DeletePair()
+global Other[x,y], x=1,2,...,v, y=1,2,...,v
+Other[x,y] = z
+Other[y,x] = z
+Other[x,z] = y
+Other[z,x] = y
+Other[y,z] = x
+Other[z,y] = x
+DeletePair(x,y)
+DeletePair(y,x)
+DeletePair(x,z)
+DeletePair(z,x)
+DeletePair(y,z)
+DeletePair(z,y)
+```
+
+ExchangeBlock(x, y, z, w)
+
+```
+external DeletePair(), InsertPair()
+global Other[x,y], x=1,2,...,v,y=1,2,...,v
+Other[x,y] = z
+Other[y,x] = z
+Other[x,z] = y
+Other[z,x] = y
+Other[y,z] = x
+Other[z,y] = x
+Other[w,y] = 0
+Other[y,w] = 0
+Other[w,z] = 0
+Other[z,w] = 0
+InsertPair(w, y)
+InsertPair(y, w)
+InsertPair(w, z)
+InsertPair(z, w)
+DeletePair(x, y)
+DeletePair(y, x)
+DeletePair(x, z)
+DeletePair(z, x)
+```
+
+Now, we present a more detailed version of the heuristic SWITCH, in which we include the necessary updating for these arrays. 
+
+RevisedSwitch()
+
+```
+external AddBlock(), ExchangeBlock()
+global NumLivePoints
+global LivePoints[x], NumLivePairs[x], x=1,2,..,v
+global LivePairs[x, y], Other[x,y], x=1,2,...,v, y=1,2,...,v
+let r be a random integer 1<=r<=NumLivePoints
+x = LivePoints[r]
+let s, t be random integers 1<= s <= t <= NumLivePairs[x]
+y = LivePairs[x,s]
+z = LivePairs[x,t]
+if Other[y,z] == 0:
+    AddBlock(x,y,z)
+    NumBlocks += 1
+else:
+    w = Other[y,z]
+    ExchangeBlock(x, y, z, w)
+```
+
+Here now is the final version of Stinson's algorithm.
+
+RevisedStinsonsAlgorithm(*v*)
+
+```
+external ConstructBlocks(), RevisedSwitch()
+global NumBlocksOther[x,y], x=1,2,...,v,y=1,2,...v
+NumBlocks = 0
+Initialize(v)
+while NumBlocks < v(v-1)/6:
+    RevisedSwitch()
+B = ConstructBlocks(v, Other)
+output(V,B)
+```
