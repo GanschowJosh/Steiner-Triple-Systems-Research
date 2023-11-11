@@ -1,5 +1,5 @@
 import random
-v = 13
+v = int(input("Enter order of desired system:\t"))
 # Adjust for 0-based indexing
 LivePoints = [0] * (v+1)
 IndexLivePoints = [0] * (v+1)
@@ -159,4 +159,7 @@ def RevisedStinsonsAlgorithm(v):
     print(B)
     print(isSteinerTripleSystem([n+1 for n in range(v)], B))
 
-RevisedStinsonsAlgorithm(v)
+if v % 6 not in [1,3]:
+    print(f"{v} is not a valid order for a Steiner triple system")
+else:
+    RevisedStinsonsAlgorithm(v)
