@@ -1,5 +1,8 @@
 import random
+
+# Get the order of the desired system from user input
 v = int(input("Enter order of desired system:\t"))
+
 # Adjust for 0-based indexing
 LivePoints = [0] * (v+1)
 IndexLivePoints = [0] * (v+1)
@@ -29,6 +32,7 @@ def isSteinerTripleSystem(points, triples):
     # Return True if all checks passed
     return True
 
+# Function to initialize the data structures
 def initialize(v):
     global NumLivePoints
     global LivePoints, IndexLivePoints
@@ -46,7 +50,7 @@ def initialize(v):
             IndexLivePairs[x][y] = (y-x)%v
             Other[x][y] = 0
 
-
+# Function to insert a pair into the system
 def InsertPair(x, y):
     global NumLivePoints
     global LivePoints, IndexLivePoints
@@ -62,6 +66,7 @@ def InsertPair(x, y):
     LivePairs[x][posn] = y
     IndexLivePairs[x][y] = posn
 
+# Function to delete a pair from the system
 def DeletePair(x, y):
     global NumLivePoints
     global LivePoints, IndexLivePoints
@@ -84,7 +89,7 @@ def DeletePair(x, y):
         LivePoints[NumLivePoints] = 0
         NumLivePoints -= 1  # This line should be inside the if statement
 
-
+# Function to add a block to the system
 def AddBlock(x, y, z):
     global Other
     Other[x][y] = z
@@ -100,6 +105,7 @@ def AddBlock(x, y, z):
     DeletePair(y,z)
     DeletePair(z,y)
 
+# Function to exchange blocks in the system
 def ExchangeBlock(x, y, z, w):
     global Other
     Other[x][y] = z
@@ -121,6 +127,7 @@ def ExchangeBlock(x, y, z, w):
     DeletePair(x, z)
     DeletePair(z, x)
 
+# Function to perform a revised switch operation
 def RevisedSwitch():
     global NumLivePoints
     global LivePoints, NumLivePairs
@@ -139,6 +146,7 @@ def RevisedSwitch():
         w = Other[y][z]
         ExchangeBlock(x, y, z, w)
 
+# Function to construct blocks from the system
 def ConstructBlocks(v, Other):
     B = []
     for x in range(1, v):
@@ -148,6 +156,7 @@ def ConstructBlocks(v, Other):
                 B.append({x, y, z})
     return B
 
+# Function to implement Revised Stinson's Algorithm
 def RevisedStinsonsAlgorithm(v):
     global NumBlocks, Other
 
@@ -159,6 +168,7 @@ def RevisedStinsonsAlgorithm(v):
     print(B)
     print(isSteinerTripleSystem([n+1 for n in range(v)], B))
 
+# Check if the order is valid for a Steiner triple system
 if v % 6 not in [1,3]:
     print(f"{v} is not a valid order for a Steiner triple system")
 else:
