@@ -206,12 +206,12 @@ def RevisedStinsonsAlgorithm(v):
         RevisedSwitch()
     B = ConstructBlocks(v, Other)
     print(B)
-    S = set()
+    '''S = set()
     for triple in B:
         S.update(triple)
     S = list(S)
     key = generateKey(S, B)
-    print(key)
+    print(key)'''
     print(isSteinerTripleSystem([n+1 for n in range(v)], B))
 
 # Check if the order is valid for a Steiner triple system
