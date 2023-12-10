@@ -3,6 +3,7 @@ import hashlib
 import json
 from itertools import permutations
 import time
+import graph 
 
 # Get the order of the desired system from user input
 v = int(input("Enter order of desired system:\t"))
@@ -206,16 +207,38 @@ def RevisedStinsonsAlgorithm(v):
         RevisedSwitch()
     B = ConstructBlocks(v, Other)
     print(B)
+    return B
     '''S = set()
     for triple in B:
         S.update(triple)
     S = list(S)
     key = generateKey(S, B)
     print(key)'''
-    print(isSteinerTripleSystem([n+1 for n in range(v)], B))
+    #print(isSteinerTripleSystem([n+1 for n in range(v)], B))
+
+def cycleGraph(a, b, system):
+    v = system
+    for item in system:
+        if a in item and b in item:
+            v.remove(item)
+    e = []
+    for item in v:
+        x, y, z = item
+        if x == a or x == b:
+            e.append((y, z))
+        elif y == a or y == b:
+            e.append((x, z))
+        elif z == a or z == b:
+            e.append((x, y))
+    g = graph.Graph(len(system) - 3)
+    for edge in e:
+        v, w = edge
+        g.addEdge(v, w)
+    if g.isCyclic():
+        print("cycle detected")
 
 # Check if the order is valid for a Steiner triple system
 if v % 6 not in [1,3]:
     print(f"{v} is not a valid order for a Steiner triple system")
 else:
-    RevisedStinsonsAlgorithm(v)
+    print(cycleGraph(1, 2, RevisedStinsonsAlgorithm(v)))
