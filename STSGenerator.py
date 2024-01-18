@@ -4,7 +4,80 @@ import json
 from itertools import permutations
 import time
 import graph 
+from collections import deque 
+'''
+def hypergraph_dfs(node, hypergraph, visited, parent, cycle_lengths, current_cycle):
+    visited[node] = True
+    current_cycle.add(node)
 
+    for hyperedge in hypergraph:
+        if node in hyperedge:
+            for neighbor in hyperedge:
+                if not visited[neighbor]:
+                    if hypergraph_dfs(neighbor, hypergraph, visited, node, cycle_lengths, current_cycle):
+                        return True
+                elif neighbor != parent and neighbor in current_cycle:
+                    # Detected a cycle
+                    cycle_lengths.append(len(current_cycle))
+
+    current_cycle.remove(node)
+    return False
+
+def detect_hypergraph_cycle(hypergraph, v):
+    def dfs(start_node, current_node, visited, parent, cycle_length):
+        visited[current_node] = True
+        for neighbor in hypergraph[current_node]:
+            if not visited[neighbor]:
+                if dfs(start_node, neighbor, visited, current_node, cycle_length + 1):
+                    return True
+            elif neighbor != parent and neighbor == start_node and cycle_length >= 2:
+                return True
+        return False
+
+    visited = [False] * (v + 1)
+    longest_cycle = 0
+
+    for node in range(1, v + 1):
+        if not visited[node]:
+            cycle_length = 0
+            if dfs(node, node, visited, -1, cycle_length):
+                longest_cycle = max(longest_cycle, cycle_length)
+
+    return longest_cycle
+
+
+def hypergraph_to_bipartite(hypergraph, v):
+    bipartite_graph = [[] for _ in range(v + len(hypergraph))]
+    for i, hyperedge in enumerate(hypergraph, start=v):
+        for node in hyperedge:
+            bipartite_graph[node].append(i)
+            bipartite_graph[i].append(node)
+    return bipartite_graph
+
+def find_cycle(node, bipartite_graph, visited, start_node, cycle_length):
+    visited[node] = True
+    cycle_length += 1
+
+    for neighbor in bipartite_graph[node]:
+        if not visited[neighbor]:
+            return find_cycle(neighbor, bipartite_graph, visited, start_node, cycle_length)
+        elif neighbor == start_node and cycle_length > 2:
+            return cycle_length
+
+    visited[node] = False  # Backtrack
+    return 0
+
+def detect_hypergraph_max_cycle_length(hypergraph, v):
+    bipartite_graph = hypergraph_to_bipartite(hypergraph, v)
+    max_cycle_length = 0
+
+    for node in range(1, v + 1):
+        visited = [False] * len(bipartite_graph)
+        cycle_length = find_cycle(node, bipartite_graph, visited, node, 0)
+        max_cycle_length = max(max_cycle_length, cycle_length)
+
+    return max_cycle_length
+'''
 # Get the order of the desired system from user input
 v = int(input("Enter order of desired system:\t"))
 
@@ -161,41 +234,6 @@ def ConstructBlocks(v, Other):
                 B.append({x, y, z})
     return B
 
-def canonicalForm(S, T):
-    startTime = time.time()
-    # Generate all permutations of S
-    perms = permutations(S)
-    
-    # Initialize the canonical form to be the lexicographically first triple system
-    canonicalT = sorted(sorted(triple) for triple in T)
-    
-    for perm in perms:
-        # Create a mapping from the original points to the permuted points
-        alpha = {S[i]: perm[i] for i in range(len(S))}
-        
-        # Apply the permutation to T
-        tPerm = [{alpha[point] for point in triple} for triple in T]
-        tPerm = sorted(sorted(triple) for triple in tPerm)
-
-        
-        # Update the canonical form if necessary
-        if tPerm < canonicalT:
-            canonicalT = tPerm
-    
-    print(f"Time taken to find canonical form: {time.time() - startTime:.5f} seconds")
-
-    return canonicalT
-
-def generateKey(S, T):
-    # Generate the canonical form of the STS
-    canonicalT = canonicalForm(S, T)
-    
-    # Serialize the canonical form
-    serializedT = json.dumps(canonicalT).encode('utf-8')
-    
-    # Generate a SHA-256 hash of the serialized canonical form
-    hashObject = hashlib.sha256(serializedT)
-    return hashObject.hexdigest()
 
 # Function to implement Revised Stinson's Algorithm
 def RevisedStinsonsAlgorithm(v):
@@ -206,7 +244,7 @@ def RevisedStinsonsAlgorithm(v):
     while NumBlocks < v*(v-1)/6:
         RevisedSwitch()
     B = ConstructBlocks(v, Other)
-    print(B)
+    #print(B)
     return B
     '''S = set()
     for triple in B:
@@ -216,29 +254,29 @@ def RevisedStinsonsAlgorithm(v):
     print(key)'''
     #print(isSteinerTripleSystem([n+1 for n in range(v)], B))
 
-def cycleGraph(a, b, system):
-    v = system
-    for item in system:
-        if a in item and b in item:
-            v.remove(item)
-    e = []
-    for item in v:
-        x, y, z = item
-        if x == a or x == b:
-            e.append((y, z))
-        elif y == a or y == b:
-            e.append((x, z))
-        elif z == a or z == b:
-            e.append((x, y))
-    g = graph.Graph(len(system) - 3)
-    for edge in e:
-        v, w = edge
-        g.addEdge(v, w)
-    if g.isCyclic():
-        print("cycle detected")
-
 # Check if the order is valid for a Steiner triple system
-if v % 6 not in [1,3]:
+if v % 6 not in [1, 3]:
     print(f"{v} is not a valid order for a Steiner triple system")
 else:
-    print(cycleGraph(1, 2, RevisedStinsonsAlgorithm(v)))
+    while(True):
+        steinerSystem = RevisedStinsonsAlgorithm(v)
+        
+        pairs = []
+        circum = []
+        for a in range(1, 26):
+            for b in range(1, 26):
+                if a!=b:
+                    pairs.append((a, b))
+        for pair in pairs:
+            a, b = pair
+            circum.append(graph.cycleFromPair(a, b, steinerSystem))
+        
+        print(max(circum))
+        if max(circum) < 12:
+            print(steinerSystem)
+            break
+    # Flatten the list of sets to make it compatible with the hypergraph functions
+    #flattened_system = [node for hyperedge in steinerSystem for node in hyperedge]
+    #longest_cycle = detect_hypergraph_cycle(flattened_system)
+    #print("Longest cycle length:", longest_cycle)
+    
