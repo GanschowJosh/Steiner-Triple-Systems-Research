@@ -1,83 +1,6 @@
 import random
-import hashlib
-import json
-from itertools import permutations
-import time
 import graph 
-from collections import deque 
-'''
-def hypergraph_dfs(node, hypergraph, visited, parent, cycle_lengths, current_cycle):
-    visited[node] = True
-    current_cycle.add(node)
 
-    for hyperedge in hypergraph:
-        if node in hyperedge:
-            for neighbor in hyperedge:
-                if not visited[neighbor]:
-                    if hypergraph_dfs(neighbor, hypergraph, visited, node, cycle_lengths, current_cycle):
-                        return True
-                elif neighbor != parent and neighbor in current_cycle:
-                    # Detected a cycle
-                    cycle_lengths.append(len(current_cycle))
-
-    current_cycle.remove(node)
-    return False
-
-def detect_hypergraph_cycle(hypergraph, v):
-    def dfs(start_node, current_node, visited, parent, cycle_length):
-        visited[current_node] = True
-        for neighbor in hypergraph[current_node]:
-            if not visited[neighbor]:
-                if dfs(start_node, neighbor, visited, current_node, cycle_length + 1):
-                    return True
-            elif neighbor != parent and neighbor == start_node and cycle_length >= 2:
-                return True
-        return False
-
-    visited = [False] * (v + 1)
-    longest_cycle = 0
-
-    for node in range(1, v + 1):
-        if not visited[node]:
-            cycle_length = 0
-            if dfs(node, node, visited, -1, cycle_length):
-                longest_cycle = max(longest_cycle, cycle_length)
-
-    return longest_cycle
-
-
-def hypergraph_to_bipartite(hypergraph, v):
-    bipartite_graph = [[] for _ in range(v + len(hypergraph))]
-    for i, hyperedge in enumerate(hypergraph, start=v):
-        for node in hyperedge:
-            bipartite_graph[node].append(i)
-            bipartite_graph[i].append(node)
-    return bipartite_graph
-
-def find_cycle(node, bipartite_graph, visited, start_node, cycle_length):
-    visited[node] = True
-    cycle_length += 1
-
-    for neighbor in bipartite_graph[node]:
-        if not visited[neighbor]:
-            return find_cycle(neighbor, bipartite_graph, visited, start_node, cycle_length)
-        elif neighbor == start_node and cycle_length > 2:
-            return cycle_length
-
-    visited[node] = False  # Backtrack
-    return 0
-
-def detect_hypergraph_max_cycle_length(hypergraph, v):
-    bipartite_graph = hypergraph_to_bipartite(hypergraph, v)
-    max_cycle_length = 0
-
-    for node in range(1, v + 1):
-        visited = [False] * len(bipartite_graph)
-        cycle_length = find_cycle(node, bipartite_graph, visited, node, 0)
-        max_cycle_length = max(max_cycle_length, cycle_length)
-
-    return max_cycle_length
-'''
 # Get the order of the desired system from user input
 v = int(input("Enter order of desired system:\t"))
 
@@ -165,7 +88,7 @@ def DeletePair(x, y):
         LivePoints[posn] = z
         IndexLivePoints[z] = posn
         LivePoints[NumLivePoints] = 0
-        NumLivePoints -= 1  # This line should be inside the if statement
+        NumLivePoints -= 1  
 
 # Function to add a block to the system
 def AddBlock(x, y, z):
@@ -246,18 +169,13 @@ def RevisedStinsonsAlgorithm(v):
     B = ConstructBlocks(v, Other)
     #print(B)
     return B
-    '''S = set()
-    for triple in B:
-        S.update(triple)
-    S = list(S)
-    key = generateKey(S, B)
-    print(key)'''
-    #print(isSteinerTripleSystem([n+1 for n in range(v)], B))
+    
 
 # Check if the order is valid for a Steiner triple system
 if v % 6 not in [1, 3]:
     print(f"{v} is not a valid order for a Steiner triple system")
 else:
+    counter = 0
     while(True):
         steinerSystem = RevisedStinsonsAlgorithm(v)
         
@@ -275,8 +193,3 @@ else:
         if max(circum) < 12:
             print(steinerSystem)
             break
-    # Flatten the list of sets to make it compatible with the hypergraph functions
-    #flattened_system = [node for hyperedge in steinerSystem for node in hyperedge]
-    #longest_cycle = detect_hypergraph_cycle(flattened_system)
-    #print("Longest cycle length:", longest_cycle)
-    
