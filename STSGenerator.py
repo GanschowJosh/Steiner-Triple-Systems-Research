@@ -183,6 +183,42 @@ def write_to_csv(system, pairDict, total_max_cycle, fileNumber):
             writer.writeheader()
         writer.writerow({'System': str(system), 'Max Cycle Pair': str(pairDict), 'Total Max Cycle': str(total_max_cycle)})
 
+def externalwriting():
+    counter = 0
+    fileNumber = 0
+    while(True):
+        steinerSystem = RevisedStinsonsAlgorithm(v)
+        
+        pairs = []
+        pairDict = {}
+        circum = []
+        for a in range(25, 0, -1):
+            for b in range(1, 26):
+                if a!=b:
+                    pairs.append((a, b))
+        #print(pairs)
+        for pair in pairs:
+            a, b = pair
+            ret = graph.cycleFromPair(a, b, steinerSystem)
+            circum.append(ret)
+            pairDict[(a,b)] = ret
+        maxCycle = max(circum)
+        if max(circum) < 12:
+            print(steinerSystem)
+            break
+        write_to_csv(steinerSystem, pairDict, maxCycle, fileNumber + 1)
+        counter+=1
+        if counter % 10000 == 0:
+            print(f"Working on file #{fileNumber + 2}")
+            fileNumber += 1
+
+if v % 6 not in [1,3]:
+    print(f"{v} is not a valid order for a Steiner Triple System")
+else:
+    print(RevisedStinsonsAlgorithm(v))
+    #externalwriting()
+
+'''
 # Check if the order is valid for a Steiner triple system
 if v % 6 not in [1, 3]:
     print(f"{v} is not a valid order for a Steiner triple system")
@@ -214,3 +250,4 @@ else:
         if counter % 10000 == 0:
             print(f"Working on file #{fileNumber + 2}")
             fileNumber += 1
+'''
