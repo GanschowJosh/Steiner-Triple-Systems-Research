@@ -1,8 +1,9 @@
 import random
-import ExternalWriting
+import graph 
+import csv
 
 # Get the order of the desired system from user input
-v = 25
+v = int(input("Enter order of desired system:\t"))
 
 # Adjust for 0-based indexing
 LivePoints = [0] * (v+1)
@@ -167,19 +168,121 @@ def RevisedStinsonsAlgorithm(v):
     while NumBlocks < v*(v-1)/6:
         RevisedSwitch()
     B = ConstructBlocks(v, Other)
+    #print(B)
     return B
+    
+# Function to write the results to a CSV file
+def write_to_csv(system, pairDict, total_max_cycle, fileNumber):
+    #print(fileNumber)
+    outputFilename = f'./CycleGeneration/output{fileNumber}.csv'
+    with open(outputFilename, 'a', newline='') as csvfile:
+        fieldnames = ['System', 'Max Cycle Pair', 'Total Max Cycle']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-def mainFunc():
-    if v % 6 not in [1,3]:
-        print(f"{v} is not a valid order for a Steiner Triple System")
+        if csvfile.tell() == 0:
+            writer.writeheader()
+        writer.writerow({'System': str(system), 'Max Cycle Pair': str(pairDict), 'Total Max Cycle': str(total_max_cycle)})
+
+def externalwriting():
+    counter = 0
+    fileNumber = 0
+    while(True):
+        steinerSystem = RevisedStinsonsAlgorithm(v)
+        
+        pairs = []
+        pairDict = {}
+        circum = []
+        for a in range(25, 0, -1):
+            for b in range(1, 26):
+                if a!=b:
+                    pairs.append((a, b))
+        #print(pairs)
+        for pair in pairs:
+            a, b = pair
+            ret = graph.cycleFromPair(a, b, steinerSystem)
+            circum.append(ret)
+            pairDict[(a,b)] = ret
+        maxCycle = max(circum)
+        if max(circum) < 12:
+            print(steinerSystem)
+            break
+        write_to_csv(steinerSystem, pairDict, maxCycle, fileNumber + 1)
+        counter+=1
+        if counter % 10000 == 0:
+            print(f"Working on file #{fileNumber + 2}")
+            fileNumber += 1
+
+def RevisedSwitchWithHeuristic():
+    global NumLivePoints
+    global livePoints, NumLivePairs
+    global livePairs, Other
+    global NumBlocks
+
+    #select a random point and two random positions in its pairs
+    r = random.randint(1, NumLivePoints)
+    x = LivePoints[r]
+    s, t = sorted(random.sample(range(1, NumLivePairs[x]+1), 2))
+    y = LivePairs[x][s]
+    z = LivePairs[x][t]
+
+    #Check if the pair (y, z) is in the same block
+    if Other[y][z] == 0:
+        AddBlock(x, y, z)
+        NumBlocks += 1
     else:
-        return RevisedStinsonsAlgorithm(v)
+        w = Other[y][z]
+        #calculate the heuristic value based on cycle lengths
+        heuristicValue = graph.cycleFromPair(x, w, Other) + graph.cycleFromPair(y, z, Other) - graph.cycleFromPair(x, y, Other) - graph.cycleFromPair(w, z, Other)
 
-if __name__ == "__main__":
-    v = int(input())
-    if v % 6 not in [1,3]:
-        print(f"{v} is not a valid order for a Steiner Triple System")
-    else:
-        print(RevisedStinsonsAlgorithm(v))
+        if heuristicValue > 0:
+            ExchangeBlock(x, y, z, w)
+        
 
-#print(mainFunc())
+def RevisedStinsonsAlgorithmWithHeuristic(v):
+    global NumBlocks, Other
+    NumBlocks = 0
+    initialize(v)
+    while NumBlocks < v * (v-1) / 6:
+        RevisedSwitchWithHeuristic()
+    B = ConstructBlocks(v, Other)
+    return B 
+
+if v % 6 not in [1,3]:
+    print(f"{v} is not a valid order for a Steiner Triple System")
+else:
+    print(RevisedStinsonsAlgorithmWithHeuristic(v))
+    #externalwriting()
+
+'''
+# Check if the order is valid for a Steiner triple system
+if v % 6 not in [1, 3]:
+    print(f"{v} is not a valid order for a Steiner triple system")
+else:
+    counter = 0
+    fileNumber = 0
+    while(True):
+        steinerSystem = RevisedStinsonsAlgorithm(v)
+        
+        pairs = []
+        pairDict = {}
+        circum = []
+        for a in range(25, 0, -1):
+            for b in range(1, 26):
+                if a!=b:
+                    pairs.append((a, b))
+        #print(pairs)
+        for pair in pairs:
+            a, b = pair
+            ret = graph.cycleFromPair(a, b, steinerSystem)
+            circum.append(ret)
+            pairDict[(a,b)] = ret
+        maxCycle = max(circum)
+        if max(circum) < 12:
+            print(steinerSystem)
+            break
+        write_to_csv(steinerSystem, pairDict, maxCycle, fileNumber + 1)
+        counter+=1
+        if counter % 10000 == 0:
+            print(f"Working on file #{fileNumber + 2}")
+            fileNumber += 1
+'''

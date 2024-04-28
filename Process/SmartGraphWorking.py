@@ -1,21 +1,5 @@
 from collections import defaultdict
 
-# global variables
-cyclesOfLength4 = []
-
-def paschtrade(system, a, b): #returns list of lists
-    newsystem = []
-    for triple in system:
-        x, y, z = triple
-        if x == a: newtriple = [b, y, z]
-        if x == b: newtriple = [a, y, z]
-        if y == a: newtriple = [x, b, z]
-        if y == b: newtriple = [x, a, z]
-        if z == a: newtriple = [x, y, b]
-        if z == b: newtriple = [x, y, a]
-        else: newtriple = [x, y, z]
-        newsystem.append(newtriple)
-    return newsystem
 
 def find_cycles(graph):
     def dfs(node, visited, current_path):
@@ -47,7 +31,9 @@ def find_cycles(graph):
 
 def cycleFromPair(a, b, system):
     edgesFromPair = []
+    #alphabet = "abcdefghijklmnopqrstuvwxyz"
     for triple in system:
+        print(triple)
         x, y, z = triple
         if x == a or x == b:
             edgesFromPair.append((y, z))
@@ -56,7 +42,7 @@ def cycleFromPair(a, b, system):
         elif z == a or z == b:
             edgesFromPair.append((x, y))
 
-    graph = {i: [] for i in range(max(max(pair) for pair in edgesFromPair) + 1)}
+    graph = {i: [] for i in range(max((max(pair) for pair in edgesFromPair), default=0) + 1)}
     for edge in edgesFromPair:
         graph[edge[0]].append(edge[1])
         graph[edge[1]].append(edge[0])
@@ -64,14 +50,21 @@ def cycleFromPair(a, b, system):
     #print(graph)
     allCycles = find_cycles(graph)
     #print("All Cycles = ", allCycles)
-    for cycle in allCycles:
-        if len(cycle) == 4:
-            cyclesOfLength4.append(cycle)
-    #print(len(cycle) for cycle in allCycles)
-    #return cyclesOfLength4[::4]
     
     #for cycle in allCycles:
         #cyDict[len(cycle)] += 1
     #print(cycleLengthDict)
-    return max(len(cycle) for cycle in allCycles), cyclesOfLength4[::4]
+    return max((len(cycle) for cycle in allCycles), default=0)
 
+
+#pairs=[]
+##cycleLengthDict = defaultdict(int) #length: num 
+#for a in range(25, 0, -1):
+#    for b in range(1, 26):
+#        if a!=b:
+#            pairs.append((a, b))
+##print(pairs)
+#    for pair in pairs:
+#        a, b = pair
+#        ret = cycleFromPair(a, b, g)
+#print(cycleLengthDict)
