@@ -2,7 +2,7 @@ import random
 import ExternalWriting
 
 # Get the order of the desired system from user input
-v = 25
+v = int(input("Enter v: "))
 
 # Adjust for 0-based indexing
 LivePoints = [0] * (v+1)
@@ -176,7 +176,6 @@ def mainFunc():
         return RevisedStinsonsAlgorithm(v)
 
 if __name__ == "__main__":
-    v = int(input())
     if v % 6 not in [1,3]:
         print(f"{v} is not a valid order for a Steiner Triple System")
     else:
