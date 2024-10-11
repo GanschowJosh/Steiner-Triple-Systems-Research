@@ -1,11 +1,46 @@
-a = [{1, 2, 25}, {1, 3, 17}, {1, 4, 21}, {1, 20, 5}, {1, 18, 6}, {1, 10, 7}, {8, 1, 22}, {1, 11, 9}, {1, 12, 23}, {16, 1, 13}, {1, 14, 15}, {24, 1, 19}, {2, 3, 7}, {2, 19, 4}, {2, 21, 5}, {16, 2, 6}, {8, 2, 15}, {9, 2, 18}, {2, 10, 14}, {24, 2, 11}, {17, 2, 12}, {2, 13, 23}, {2, 20, 22}, {3, 4, 12}, {11, 3, 5}, {24, 3, 6}, {8, 9, 3}, {10, 3, 21}, {25, 3, 13}, {3, 14, 22}, {3, 20, 15}, {16, 19, 3}, {18, 3, 23}, {13, 4, 5}, {4, 6, 23}, {4, 20, 7}, {8, 4, 14}, {24, 9, 4}, {25, 10, 4}, {17, 11, 4}, {18, 4, 15}, {16, 4, 22}, {8, 5, 6}, {24, 5, 7}, {9, 5, 14}, {10, 18, 5}, {19, 12, 5}, {17, 5, 15}, {16, 25, 5}, {5, 22, 23}, {22, 6, 7}, {9, 12, 6}, {10, 11, 6}, {13, 6, 15}, {25, 6, 14}, {17, 20, 6}, {19, 21, 6}, {8, 16, 7}, {9, 17, 7}, {11, 23, 7}, {18, 12, 7}, {13, 14, 7}, {15, 21, 7}, {25, 19, 7}, {8, 10, 23}, {8, 19, 11}, {8, 12, 13}, {8, 17, 18}, {8, 20, 21}, {8, 24, 25}, {9, 10, 13}, {9, 19, 15}, {16, 9, 20}, {9, 21, 23}, {9, 22, 25}, {10, 12, 22}, {24, 10, 15}, {16, 17, 10}, {10, 19, 20}, {16, 11, 12}, {21, 11, 13}, {18, 11, 14}, {11, 22, 15}, {25, 11, 20}, {12, 20, 14}, {25, 12, 15}, {24, 12, 21}, {17, 19, 13}, {18, 20, 13}, {24, 13, 22}, {16, 21, 14}, {24, 17, 14}, {19, 14, 23}, {16, 23, 15}, {16, 24, 18}, {17, 21, 22}, {17, 25, 23}, {18, 19, 22}, {25, 18, 21}, {24, 20, 23}]
-pairs = [(9, 11), (9, 15), (15, 22), (18, 22), (14, 18), (14, 23), (7, 23), (7, 25), (20, 25), (10, 20), 
-         (6, 10), (6, 21), (13, 21), (13, 17), (4, 17), (2, 4), (2, 24), (19, 24)]
+li = []
+for i in range(70):
+    li.append(input())
 
-new = []
-for item in a:
-    x,y,z=sorted(item)
-    if (x, z) in pairs or (x, y) in pairs or (y, z) in pairs:
-        new.append(item)
+# Define a function to check if a set of points and triples is a Steiner triple system
+def isSteinerTripleSystem(points, triples):
+    # Create a set of all triples
+    triples_set = set(map(frozenset, triples))
 
-print(new)
+    # Check if every pair of points appears in exactly one triple
+    for i in range(len(points)):
+        for j in range(i + 1, len(points)):
+            pair = frozenset([points[i], points[j]])
+            count = sum(1 for triple in triples_set if pair.issubset(triple))
+            if count != 1:
+                print(f"Pair {pair} appears in {count} triples, which is incorrect.")
+                for triple in triples_set:
+                    if pair.issubset(triple):
+                        print(f"Found in triple: {triple}")
+                return False
+
+    # Check that each triple has exactly 3 points
+    for triple in triples_set:
+        if len(triple) != 3:
+            print(f"Triple {triple} does not have exactly 3 points.")
+            return False
+
+    # Check if the order of the system is congruent to 1 or 3 modulo 6
+    order = len(points)
+    if order % 6 not in [1, 3]:
+        print(f"Order of the system is {order}, which is not congruent to 1 or 3 modulo 6.")
+        return False
+
+    # Return True if all checks passed
+    print("The system is a valid Steiner Triple System.")
+    return True
+
+while True:
+    system = []
+    for item in li:
+        currBlock = []
+        for i in range(len(item)):
+            if item[i] == "1":
+                currBlock.append(i+1)
+        system.append(set(currBlock))
+    print(isSteinerTripleSystem(list(i+1 for i in range(21)), system))

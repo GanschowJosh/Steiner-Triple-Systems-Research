@@ -88,5 +88,7 @@ def processSystem(system):
         currCycle = cycleFromPair(a, b, system)
         if currCycle > cycleMax:
             cycleMax = currCycle
+        if cycleMax > 15: #cutting off at 15, don't even need to look at the rest of the system
+            return cycleMax
     
     return cycleMax

@@ -43,6 +43,9 @@ def printProgressBar(iteration, total, length=50):
 
 def systemFromBits(bits):
     global valid, invalid
+    if not (valid+invalid)%100:
+        printProgressBar(valid+invalid, 65000000)
+        print(valid+invalid)
     currSystem = []
     for line in bits:
         currBlock = []
@@ -59,11 +62,10 @@ def systemFromBits(bits):
             print(currSystem)
             
     else:
-        #print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
+        print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
         invalid += 1
-    if not (valid + invalid) % 1000:
-        #print(valid + invalid)
-        printProgressBar(valid+invalid, 65000000)
+    #print(valid/(invalid+1))
+    
     """try:
         print(valid/invalid)
     except:
@@ -92,11 +94,11 @@ print(isSteinerTripleSystem(list(i+1 for i in range(21)), sys))
 
 if __name__ == "__main__":
     chunk = []
-    for i, line in enumerate(sys.stdin, 1):
+    for line in sys.stdin:
         if line.strip(): #ignoring empty
             chunk.append(line.strip())
         
-        if i%70 ==0:
+        if len(chunk) == 70:
             systemFromBits(chunk)
             chunk = [] #resetting chunk for next group
     
