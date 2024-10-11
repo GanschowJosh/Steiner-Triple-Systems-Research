@@ -59,6 +59,8 @@ def systemFromBits(bits):
         maxCycle = graph.processSystem(currSystem)
         if maxCycle < 18:
             best.append(currSystem)
+            with open("out.txt", "a") as file:
+                file.write(f"{currSystem}\n")
             print(currSystem)
             
     else:
