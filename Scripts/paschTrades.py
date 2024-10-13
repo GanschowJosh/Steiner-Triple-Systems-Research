@@ -43,6 +43,6 @@ def performPaschTrades(system, pairs):
                         file.write(f"{newsys}\n")
 
 if __name__ == "__main__":
-    system = STSGenerator.RevisedStinsonsAlgorithm(v)
+    system = STSGenerator.generateSteinerTripleSystem(v)
     pairs = list(itertools.combinations(range(1, v + 1), 2))
     performPaschTrades(system, pairs)
