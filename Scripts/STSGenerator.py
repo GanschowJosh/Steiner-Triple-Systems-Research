@@ -124,7 +124,7 @@ class SteinerTripleSystem:
             self.RevisedSwitch()
         return self.ConstructBlocks()
 
-#checks if a given v is calid for an order of a Steiner Triple System
+#checks if a given v is valid for an order of a Steiner Triple System
 def isValidOrder(v):
     return v%6 in [1, 3]
 
