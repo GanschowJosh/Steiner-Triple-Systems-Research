@@ -1,5 +1,5 @@
 import random
-import ExternalWriting
+import Scripts.ExternalWriting as ExternalWriting
 
 # Get the order of the desired system from user input
 v = int(input("Enter v: "))

@@ -1,5 +1,5 @@
 import random
-import graph 
+import Scripts.graph as graph 
 import csv
 
 # Get the order of the desired system from user input

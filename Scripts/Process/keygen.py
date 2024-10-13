@@ -3,7 +3,7 @@ import hashlib
 import json
 from itertools import permutations
 import time
-import graph 
+import Scripts.graph as graph 
 
 def canonicalForm(S, T):
     startTime = time.time()

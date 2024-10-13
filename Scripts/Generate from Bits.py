@@ -3,7 +3,7 @@ Script to take input of lines of binary and construct system
 """
 
 import sys
-import graph
+import Scripts.graph as graph
 import os
 
 best = []

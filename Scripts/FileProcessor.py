@@ -1,9 +1,9 @@
 import os
-import graph
-import STSGenerator
+import Scripts.graph as graph
+import Scripts.STSGenerator as STSGenerator
 import ast
 from multiprocessing import Pool
-from paschTrades import performPaschTrades
+from Scripts.paschTrades import performPaschTrades
 
 pairs = []
 v = 25

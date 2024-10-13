@@ -1,4 +1,4 @@
-import graph 
+import Scripts.graph as graph 
 import csv
 # Function to write the results to a CSV file
 def write_to_csv(system, pairDict, total_max_cycle, fileNumber):

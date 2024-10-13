@@ -1,6 +1,6 @@
 import itertools
-import graph
-import STSGenerator
+import Scripts.graph as graph
+import Scripts.STSGenerator as STSGenerator
 import time
 
 v = 25
