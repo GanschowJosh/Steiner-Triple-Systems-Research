@@ -1,16 +1,138 @@
+"""
+This module houses all the functions for the generation of the Steiner Triple Systems
+"""
 import random
-import Scripts.ExternalWriting as ExternalWriting
 
-# Get the order of the desired system from user input
-v = int(input("Enter v: "))
+class SteinerTripleSystem:
+    def __init__(self, v):
+        self.v = v
+        self.LivePoints = [0] * (v+1)
+        self.IndexLivePoints = [0] * (v+1)
+        self.NumLivePairs = [0] * (v+1)
+        self.LivePairs = [[0]*(v+1) for _ in range(v+1)]
+        self.IndexLivePairs = [[0]*(v+1) for _ in range(v+1)]
+        self.Other = [[0]*(v+1) for _ in range(v+1)]
+        self.NumLivePoints = v
+        self.NumBlocks = 0
 
-# Adjust for 0-based indexing
-LivePoints = [0] * (v+1)
-IndexLivePoints = [0] * (v+1)
-NumLivePairs = [0] * (v+1)
-LivePairs = [[0]*(v+1) for _ in range(v+1)]
-IndexLivePairs = [[0]*(v+1) for _ in range(v+1)]
-Other = [[0]*(v+1) for _ in range(v+1)]
+    # Function to initialize the data structures
+    def initialize(self):
+        NumLivePoints = self.v
+        for x in range(1, self.v+1):  # Adjust the range
+            self.LivePoints[x] = x
+            self.IndexLivePoints[x] = x
+            self.NumLivePairs[x] = self.v - 1
+            for y in range(1, self.v):  # Adjust the range
+                self.LivePairs[x][y] = ((y+x-1)%self.v)+1
+            for y in range(1, self.v+1):  # Adjust the range
+                self.IndexLivePairs[x][y] = (y-x)%self.v
+                self.Other[x][y] = 0
+    # Function to insert a pair into the system
+    def InsertPair(self, x, y):
+        if self.NumLivePairs[x] == 0:
+            self.NumLivePoints += 1
+            self.LivePoints[self.NumLivePoints] = x
+            self.IndexLivePoints[x] = self.NumLivePoints
+        self.NumLivePairs[x] += 1
+        posn = self.NumLivePairs[x]
+        self.LivePairs[x][posn] = y
+        self.IndexLivePairs[x][y] = posn
+    
+    # Function to delete a pair from the system
+    def DeletePair(self, x, y):
+        posn = self.IndexLivePairs[x][y]
+        num = self.NumLivePairs[x]
+        z = self.LivePairs[x][num]
+        self.LivePairs[x][posn] = z
+        self.IndexLivePairs[x][z] = posn
+        self.LivePairs[x][num] = 0
+        self.IndexLivePairs[x][y] = 0
+        self.NumLivePairs[x] -= 1
+        if self.NumLivePairs[x] == 0:
+            posn = self.IndexLivePoints[x]
+            z = self.LivePoints[self.NumLivePoints]
+            self.LivePoints[posn] = z
+            self.IndexLivePoints[z] = posn
+            self.LivePoints[self.NumLivePoints] = 0
+            self.NumLivePoints -= 1 
+
+    # Function to add a block to the system
+    def AddBlock(self, x, y, z):
+        self.Other[x][y] = z
+        self.Other[y][x] = z
+        self.Other[x][z] = y
+        self.Other[z][x] = y
+        self.Other[y][z] = x
+        self.Other[z][y] = x
+        self.DeletePair(x,y)
+        self.DeletePair(y,x)
+        self.DeletePair(x,z)
+        self.DeletePair(z,x)
+        self.DeletePair(y,z)
+        self.DeletePair(z,y)
+
+    # Function to exchange blocks in the system
+    def ExchangeBlock(self, x, y, z, w):
+        self.Other[x][y] = z
+        self.Other[y][x] = z
+        self.Other[x][z] = y
+        self.Other[z][x] = y
+        self.Other[y][z] = x
+        self.Other[z][y] = x
+        self.Other[w][y] = 0
+        self.Other[y][w] = 0
+        self.Other[w][z] = 0
+        self.Other[z][w] = 0
+        self.InsertPair(w, y)
+        self.InsertPair(y, w)
+        self.InsertPair(w, z)
+        self.InsertPair(z, w)
+        self.DeletePair(x, y)
+        self.DeletePair(y, x)
+        self.DeletePair(x, z)
+        self.DeletePair(z, x)
+
+    # Function to perform a revised switch operation
+    def RevisedSwitch(self):
+        r = random.randint(1, self.NumLivePoints)
+        x = self.LivePoints[r]
+        s, t = sorted(random.sample(range(1, self.NumLivePairs[x]+1), 2))
+        y = self.LivePairs[x][s]
+        z = self.LivePairs[x][t]
+        if self.Other[y][z] == 0:
+            self.AddBlock(x,y,z)
+            self.NumBlocks += 1
+        else:
+            w = self.Other[y][z]
+            self.ExchangeBlock(x, y, z, w)
+
+    # Function to construct blocks from the system
+    def ConstructBlocks(self):
+        B = []
+        for x in range(1, self.v):
+            for y in range(x+1, self.v):
+                z = self.Other[x][y]
+                if z > y:
+                    B.append({x, y, z})
+        return B
+
+    # Function to implement Revised Stinson's Algorithm
+    def RevisedStinsonsAlgorithm(self):
+        self.NumBlocks = 0
+        self.initialize()
+        while self.NumBlocks < self.v*(self.v-1)/6:
+            self.RevisedSwitch()
+        return self.ConstructBlocks()
+
+#checks if a given v is calid for an order of a Steiner Triple System
+def isValidOrder(v):
+    return v%6 in [1, 3]
+
+def generateSteinerTripleSystem(v):
+    if not isValidOrder(v):
+        raise ValueError(f"{v} is not a valid order for a Steiner Triple System")
+    sts = SteinerTripleSystem(v)
+    return sts.RevisedStinsonsAlgorithm()
 
 # Define a function to check if a set of points and triples is a Steiner triple system
 def isSteinerTripleSystem(points, triples):
@@ -33,152 +155,10 @@ def isSteinerTripleSystem(points, triples):
     # Return True if all checks passed
     return True
 
-# Function to initialize the data structures
-def initialize(v):
-    global NumLivePoints
-    global LivePoints, IndexLivePoints
-    global NumLivePairs
-    global LivePairs, Other
-
-    NumLivePoints = v
-    for x in range(1, v+1):  # Adjust the range
-        LivePoints[x] = x
-        IndexLivePoints[x] = x
-        NumLivePairs[x] = v - 1
-        for y in range(1, v):  # Adjust the range
-            LivePairs[x][y] = ((y+x-1)%v)+1
-        for y in range(1, v+1):  # Adjust the range
-            IndexLivePairs[x][y] = (y-x)%v
-            Other[x][y] = 0
-
-# Function to insert a pair into the system
-def InsertPair(x, y):
-    global NumLivePoints
-    global LivePoints, IndexLivePoints
-    global NumLivePairs
-    global LivePairs
-
-    if NumLivePairs[x] == 0:
-        NumLivePoints += 1
-        LivePoints[NumLivePoints] = x
-        IndexLivePoints[x] = NumLivePoints
-    NumLivePairs[x] += 1
-    posn = NumLivePairs[x]
-    LivePairs[x][posn] = y
-    IndexLivePairs[x][y] = posn
-
-# Function to delete a pair from the system
-def DeletePair(x, y):
-    global NumLivePoints
-    global LivePoints, IndexLivePoints
-    global NumLivePairs
-    global LivePairs
-
-    posn = IndexLivePairs[x][y]
-    num = NumLivePairs[x]
-    z = LivePairs[x][num]
-    LivePairs[x][posn] = z
-    IndexLivePairs[x][z] = posn
-    LivePairs[x][num] = 0
-    IndexLivePairs[x][y] = 0
-    NumLivePairs[x] -= 1
-    if NumLivePairs[x] == 0:
-        posn = IndexLivePoints[x]
-        z = LivePoints[NumLivePoints]
-        LivePoints[posn] = z
-        IndexLivePoints[z] = posn
-        LivePoints[NumLivePoints] = 0
-        NumLivePoints -= 1  
-
-# Function to add a block to the system
-def AddBlock(x, y, z):
-    global Other
-    Other[x][y] = z
-    Other[y][x] = z
-    Other[x][z] = y
-    Other[z][x] = y
-    Other[y][z] = x
-    Other[z][y] = x
-    DeletePair(x,y)
-    DeletePair(y,x)
-    DeletePair(x,z)
-    DeletePair(z,x)
-    DeletePair(y,z)
-    DeletePair(z,y)
-
-# Function to exchange blocks in the system
-def ExchangeBlock(x, y, z, w):
-    global Other
-    Other[x][y] = z
-    Other[y][x] = z
-    Other[x][z] = y
-    Other[z][x] = y
-    Other[y][z] = x
-    Other[z][y] = x
-    Other[w][y] = 0
-    Other[y][w] = 0
-    Other[w][z] = 0
-    Other[z][w] = 0
-    InsertPair(w, y)
-    InsertPair(y, w)
-    InsertPair(w, z)
-    InsertPair(z, w)
-    DeletePair(x, y)
-    DeletePair(y, x)
-    DeletePair(x, z)
-    DeletePair(z, x)
-
-# Function to perform a revised switch operation
-def RevisedSwitch():
-    global NumLivePoints
-    global LivePoints, NumLivePairs
-    global LivePairs, Other
-    global NumBlocks
-
-    r = random.randint(1, NumLivePoints)
-    x = LivePoints[r]
-    s, t = sorted(random.sample(range(1, NumLivePairs[x]+1), 2))
-    y = LivePairs[x][s]
-    z = LivePairs[x][t]
-    if Other[y][z] == 0:
-        AddBlock(x,y,z)
-        NumBlocks += 1
-    else:
-        w = Other[y][z]
-        ExchangeBlock(x, y, z, w)
-
-# Function to construct blocks from the system
-def ConstructBlocks(v, Other):
-    B = []
-    for x in range(1, v):
-        for y in range(x+1, v):
-            z = Other[x][y]
-            if z > y:
-                B.append({x, y, z})
-    return B
-
-
-# Function to implement Revised Stinson's Algorithm
-def RevisedStinsonsAlgorithm(v):
-    global NumBlocks, Other
-
-    NumBlocks = 0
-    initialize(v)
-    while NumBlocks < v*(v-1)/6:
-        RevisedSwitch()
-    B = ConstructBlocks(v, Other)
-    return B
-
-def mainFunc():
-    if v % 6 not in [1,3]:
-        print(f"{v} is not a valid order for a Steiner Triple System")
-    else:
-        return RevisedStinsonsAlgorithm(v)
-
 if __name__ == "__main__":
-    if v % 6 not in [1,3]:
-        print(f"{v} is not a valid order for a Steiner Triple System")
-    else:
-        print(RevisedStinsonsAlgorithm(v))
-
-#print(mainFunc())
+    v = int(input())
+    try:
+        result = generateSteinerTripleSystem(v)
+        print(result)
+    except ValueError as e:
+        print(e)

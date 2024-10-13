@@ -4,35 +4,12 @@ Script to take input of lines of binary and construct system
 
 import sys
 import Scripts.graph as graph
+from STSGenerator import isSteinerTripleSystem
 import os
 
 best = []
 valid = 0
 invalid = 0
-# Define a function to check if a set of points and triples is a Steiner triple system
-def isSteinerTripleSystem(points, triples):
-    # Create a set of all triples
-    triples_set = set(map(frozenset, triples))
-
-    # Check if every pair of points appears in exactly one triple
-    for i in range(len(points)):
-        for j in range(i + 1, len(points)):
-            pair = frozenset([points[i], points[j]])
-            count = sum(1 for triple in triples_set if pair.issubset(triple))
-            if count != 1:
-                return False
-
-    # Check that each triple has exactly 3 points
-    if any(len(triple) != 3 for triple in triples_set):
-        return False
-
-    # Check if the order of the system is congruent to 1 or 3 modulo 6
-    order = len(points)
-    if order % 6 not in [1, 3]:
-        return False
-
-    # Return True if all checks passed
-    return True
 
 def printProgressBar(iteration, total, length=50):
     progress = int(length*iteration//total)
