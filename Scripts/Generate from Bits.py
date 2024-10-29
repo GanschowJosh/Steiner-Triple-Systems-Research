@@ -3,7 +3,7 @@ Script to take input of lines of binary and construct system
 """
 
 import sys
-import Scripts.graph as graph
+import graph as graph
 from STSGenerator import isSteinerTripleSystem
 import os
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         
         if len(chunk) == 70:
             systemFromBits(chunk)
-            chunk = [] #resetting chunk for next group
+            chunk.clear() #resetting chunk for next group
     
     if chunk:
         systemFromBits(chunk)
