@@ -2,42 +2,10 @@ import sys
 import os
 import graph
 from STSGenerator import isSteinerTripleSystem
-from multiprocessing import Pool, Manager, Value
-import time  # Import time module for tracking elapsed time
-
-def printProgressBar(iteration, total, start_time, length=50):
-    """
-    Displays or updates a console progress bar with estimated time remaining.
-
-    Args:
-        iteration (int): Current iteration count.
-        total (int): Total number of iterations.
-        start_time (float): Timestamp when processing started.
-        length (int, optional): Length of the progress bar. Defaults to 50.
-    """
-    progress = int(length * iteration // total)
-    bar = '█' * progress + '-' * (length - progress)
-    percent = (iteration / total) * 100
-
-    # Calculate elapsed time
-    elapsed_time = time.time() - start_time
-
-    # Calculate estimated total time
-    if iteration > 0:
-        time_per_chunk = elapsed_time / iteration
-        estimated_total_time = time_per_chunk * total
-        remaining_time = estimated_total_time - elapsed_time
-    else:
-        remaining_time = 0
-
-    # Format remaining time into H:M:S
-    hrs, rem = divmod(int(remaining_time), 3600)
-    mins, secs = divmod(rem, 60)
-    time_format = f"{hrs}h {mins}m {secs}s"
-
-    # Clear the console and print the progress bar with time estimation
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"\r|{bar}| {percent:.2f}% complete | Time Left: {time_format}", end='')
+from multiprocessing import Pool, Manager, Value, Lock
+from functools import partial
+from tqdm import tqdm  # Import tqdm for progress bar
+import signal  # Import signal for handling interrupts
 
 def process_chunk(bits):
     """
@@ -49,23 +17,27 @@ def process_chunk(bits):
     Returns:
         tuple: (is_valid (bool), currSystem (list of sets or None))
     """
-    # Convert bits to currSystem
-    currSystem = []
-    for line in bits:
-        currBlock = []
-        for char in range(len(line)):
-            if line[char] == "1":
-                currBlock.append(char + 1)
-        currSystem.append(set(currBlock))
+    try:
+        # Convert bits to currSystem
+        currSystem = []
+        for line in bits:
+            currBlock = []
+            for char in range(len(line)):
+                if line[char] == "1":
+                    currBlock.append(char + 1)
+            currSystem.append(set(currBlock))
 
-    # Check if it's a Steiner Triple System
-    if isSteinerTripleSystem(list(range(1, 22)), currSystem):
-        maxCycle = graph.processSystem(currSystem)
-        if maxCycle < 18:
-            return (True, currSystem)
-    return (False, None)
+        # Check if it's a Steiner Triple System
+        if isSteinerTripleSystem(list(range(1, 22)), currSystem):
+            maxCycle = graph.processSystem(currSystem)
+            if maxCycle < 18:
+                return (True, currSystem)
+        return (False, None)
+    except Exception as e:
+        # Log the exception and return invalid
+        return (False, None)
 
-def handle_result(result, valid, invalid, best, file_handle):
+def handle_result(result, valid, invalid, file_handle, lock_print):
     """
     Callback function to handle results from worker processes.
 
@@ -73,33 +45,36 @@ def handle_result(result, valid, invalid, best, file_handle):
         result (tuple): (is_valid (bool), currSystem (list of sets or None))
         valid (Value): Shared value for counting valid systems.
         invalid (Value): Shared value for counting invalid systems.
-        best (list): Shared list to store best systems.
         file_handle (file object): File handle to write valid systems.
+        lock_print (Lock): Lock to synchronize console output.
     """
     is_valid, currSystem = result
     if is_valid:
         with valid.get_lock():
             valid.value += 1
-        best.append(currSystem)
-        file_handle.write(f"{currSystem}\n")
-        print(currSystem)
+        # Write to file without storing in memory
+        with lock_print:
+            file_handle.write(f"{currSystem}\n")
     else:
         with invalid.get_lock():
             invalid.value += 1
 
+def init_worker():
+    """
+    Ignore SIGINT in worker processes to allow graceful shutdown from the main process.
+    """
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 def main():
-    # Initialize counters and storage using Manager
+    # Initialize counters using Manager
     manager = Manager()
-    best = manager.list()
     valid = Value('i', 0)
     invalid = Value('i', 0)
-    
+    lock_print = Lock()
+
     # Define total expected for progress bar (adjust as needed)
     total_expected = 62336617  # Total number of chunks expected
-    processed = Value('i', 0)
-
-    # Record the start time
-    start_time = time.time()
+    processed = 0
 
     # Variables for parsing input
     have_prev = False
@@ -110,21 +85,47 @@ def main():
     counter = 0
     chunk = []
 
-    # Initialize multiprocessing Pool
-    pool = Pool()
+    # Initialize multiprocessing Pool with limited processes and initializer to handle signals
+    num_workers = min(8, os.cpu_count())  # Adjust based on your system
+    pool = Pool(processes=num_workers, initializer=init_worker)
 
-    # Open the output file once in append mode
-    with open("out.txt", "a") as file_handle:
-        # Open and read from 'decompressed.txt'
-        try:
-            with open("decompressed.txt", "r") as input_file:
+    # Flag to indicate if an interrupt was received
+    interrupted = False
+
+    # Define a signal handler for graceful shutdown
+    def signal_handler(sig, frame):
+        nonlocal interrupted
+        interrupted = True
+        print("\nInterrupt received! Shutting down gracefully...")
+        pool.terminate()  # Terminate worker processes immediately
+        pool.join()
+        sys.exit(0)
+
+    # Register the signal handler
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        # Open the output file once in append mode with buffering
+        with open("out.txt", "a", buffering=1) as file_handle:
+            # Open and read from 'decompressed.txt'
+            input_file_path = "decompressed.txt"
+            if not os.path.exists(input_file_path):
+                print(f"Error: '{input_file_path}' not found.")
+                pool.close()
+                pool.join()
+                sys.exit(1)
+
+            with open(input_file_path, "r") as input_file:
+                # Initialize tqdm progress bar
+                pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="chunk")
+
                 for line in input_file:
                     line = line.strip()
 
                     # Print the first 100 lines for debugging
-                    if counter < 100:
+                    """if counter < 100:
                         print(line)
-                        counter += 1
+                        counter += 1"""
 
                     if line.startswith("$"):
                         # Process orbit definitions
@@ -149,7 +150,7 @@ def main():
                         # Calculate total length of orbits
                         for x in a:
                             if x not in orbs:
-                                raise ValueError("Orbit not known")
+                                raise ValueError(f"Orbit {x} not known")
                             total_len += orblens[x]
 
                         if have_prev:
@@ -183,47 +184,43 @@ def main():
                                     pool.apply_async(
                                         process_chunk,
                                         args=(chunk.copy(),),
-                                        callback=lambda res: handle_result(res, valid, invalid, best, file_handle)
+                                        callback=partial(handle_result, valid=valid, invalid=invalid, file_handle=file_handle, lock_print=lock_print)
                                     )
                                     chunk.clear()
-                                    with processed.get_lock():
-                                        processed.value += 1
+                                    processed += 1
+                                    pbar.update(1)
 
-                                    # Update progress bar every 250 processed chunks
-                                    if processed.value % 250 == 0:
-                                        printProgressBar(processed.value, total_expected, start_time)
-                                        print(f"\nProcessed Chunks: {processed.value}")
-        except FileNotFoundError as e:
-            print(e)
+                # After processing all lines, handle any remaining chunk
+                if chunk:
+                    pool.apply_async(
+                        process_chunk,
+                        args=(chunk.copy(),),
+                        callback=partial(handle_result, valid=valid, invalid=invalid, file_handle=file_handle, lock_print=lock_print)
+                    )
+                    processed += 1
+                    pbar.update(1)
+
+                # Close the progress bar
+                pbar.close()
+
+    except KeyboardInterrupt:
+        # This block will not be reached because the signal handler exits the program
+        pass
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if not interrupted:
+            # Close the pool and wait for all worker processes to finish
             pool.close()
             pool.join()
-            sys.exit(1)
-
-        # After processing all lines, handle any remaining chunk
-        if chunk:
-            pool.apply_async(
-                process_chunk,
-                args=(chunk.copy(),),
-                callback=lambda res: handle_result(res, valid, invalid, best, file_handle)
-            )
-            with processed.get_lock():
-                processed.value += 1
-
-        # Final progress bar update after all chunks are submitted
-        printProgressBar(processed.value, total_expected, start_time)
-        print(f"\nProcessed Chunks: {processed.value}")
-
-        # Close the pool and wait for all worker processes to finish
-        pool.close()
-        pool.join()
 
     # Final output
     print("\nProcessing Complete.")
-    print(f"Best Systems Found: {len(best)}")
     print(f"Valid Systems: {valid.value}")
     print(f"Invalid Systems: {invalid.value}")
     if (valid.value + invalid.value) > 0:
-        print(f"Validity Ratio: {valid.value / (valid.value + invalid.value):.4f}")
+        ratio = valid.value / (valid.value + invalid.value)
+        print(f"Validity Ratio: {ratio:.4f}")
     else:
         print("No systems processed.")
 
