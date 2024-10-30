@@ -18,7 +18,7 @@ def process_chunk(bits):
         tuple: (is_valid (bool), currSystem (list of sets or None))
     """
     try:
-        # Convert bits to currSystem
+        # Convert bits to workable system
         currSystem = []
         for line in bits:
             currBlock = []
@@ -27,15 +27,13 @@ def process_chunk(bits):
                     currBlock.append(char + 1)
             currSystem.append(set(currBlock))
 
-        # Check if it's a Steiner Triple System
+        # Check if it's a valid STS and process the system
         if isSteinerTripleSystem(list(range(1, 22)), currSystem):
             maxCycle = graph.processSystem(currSystem)
             if maxCycle < 18:
                 return (True, currSystem)
         return (False, None)
     except Exception as e:
-        # Log the exception and return invalid
-        # You can log 'e' to a file or stderr if needed
         return (False, None)
 
 def handle_result(result, valid, invalid, file_handle, lock_print):
@@ -165,11 +163,10 @@ def main():
     invalid = Value('i', 0)
     lock_print = Lock()
 
-    # Define total expected for progress bar
     total_expected = 62336617  # Total number of chunks expected
 
     # Initialize multiprocessing Pool with limited processes and initializer to handle signals
-    num_workers = min(6, cpu_count())  # Adjust based on your system
+    num_workers = min(6, cpu_count()) 
     pool = Pool(processes=num_workers, initializer=init_worker)
 
     # Flag to indicate if an interrupt was received
@@ -201,7 +198,7 @@ def main():
             # Initialize the parsing generator
             chunk_gen = parse_decompressed_file(input_file_path, total_expected)
 
-            # Initialize tqdm progress bar with accurate total
+            # tdqm progress bar
             pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="chunk",
                         mininterval=0.5, miniters=1000, unit_scale=True)
 
