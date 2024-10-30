@@ -2,10 +2,10 @@ import sys
 import os
 import graph
 from STSGenerator import isSteinerTripleSystem
-from multiprocessing import Pool, Manager, Value, Lock
+from multiprocessing import Pool, Value, Lock, cpu_count
 from functools import partial
-from tqdm import tqdm  # Import tqdm for progress bar
-import signal  # Import signal for handling interrupts
+from tqdm import tqdm
+import signal
 
 def process_chunk(bits):
     """
@@ -35,11 +35,12 @@ def process_chunk(bits):
         return (False, None)
     except Exception as e:
         # Log the exception and return invalid
+        # You can log 'e' to a file or stderr if needed
         return (False, None)
 
 def handle_result(result, valid, invalid, file_handle, lock_print):
     """
-    Callback function to handle results from worker processes.
+    Handle the result returned by the worker process.
 
     Args:
         result (tuple): (is_valid (bool), currSystem (list of sets or None))
@@ -65,28 +66,110 @@ def init_worker():
     """
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-def main():
-    # Initialize counters using Manager
-    manager = Manager()
-    valid = Value('i', 0)
-    invalid = Value('i', 0)
-    lock_print = Lock()
+def parse_decompressed_file(input_file_path, total_expected):
+    """
+    Generator that parses the input file and yields chunks of bits.
 
-    # Define total expected for progress bar (adjust as needed)
-    total_expected = 62336617  # Total number of chunks expected
-    processed = 0
+    Args:
+        input_file_path (str): Path to the input file.
+        total_expected (int): Total number of chunks expected.
 
-    # Variables for parsing input
+    Yields:
+        list of str: A chunk of 70 bit strings.
+    """
     have_prev = False
     soln_size = 0
     orbs = {}
     orblens = {}
     soln = []
-    counter = 0
     chunk = []
 
+    with open(input_file_path, "r") as input_file:
+        for line in input_file:
+            line = line.strip()
+
+            if line.startswith("$"):
+                # Process orbit definitions
+                parts = line.split(maxsplit=1)
+                if len(parts) < 2:
+                    continue  # Skip malformed lines
+                key_str, value = parts
+                try:
+                    key = int(key_str[1:])  # remove the $ sign and convert to integer
+                except ValueError:
+                    continue  # Skip lines with invalid keys
+
+                if have_prev:
+                    soln_size = 0
+                    orbs.clear()
+                    orblens.clear()
+                    have_prev = False
+
+                orbs[key] = value
+                orblens[key] = len(value.split())
+            else:
+                # Process solution lines
+                try:
+                    a = list(map(int, line.split()))
+                except ValueError:
+                    continue  # Skip lines with invalid integers
+
+                total_len = 0
+                for x in a:
+                    if x not in orbs:
+                        # Orbit key not found, skip this solution
+                        total_len = 0
+                        break
+                    total_len += orblens.get(x, 0)
+
+                if have_prev:
+                    j = soln_size - 1
+                    while total_len > 0 and j >= 0:
+                        total_len -= orblens.get(soln[j], 0)
+                        j -= 1
+                    j += 1
+                else:
+                    j = 0
+
+                soln_size = j + len(a)
+
+                # Update solution array
+                for i in range(len(a)):
+                    if len(soln) > j:
+                        soln[j] = a[i]
+                    else:
+                        soln.append(a[i])
+                    j += 1
+
+                have_prev = True
+
+                # Convert solution to usable form and build chunks
+                for i in range(soln_size):
+                    orbit_key = soln[i]
+                    if orbit_key not in orbs:
+                        continue  # Skip if orbit key is missing
+                    b = orbs[orbit_key].split()
+                    for item in b:
+                        chunk.append(item)
+                        if len(chunk) == 70:
+                            yield chunk.copy()
+                            chunk.clear()
+    
+    # After processing all lines, yield any remaining chunk
+    if chunk:
+        yield chunk.copy()
+
+def main():
+    # Initialize shared counters
+    valid = Value('i', 0)
+    invalid = Value('i', 0)
+    lock_print = Lock()
+
+    # Define total expected for progress bar
+    total_expected = 62336617  # Total number of chunks expected
+
     # Initialize multiprocessing Pool with limited processes and initializer to handle signals
-    num_workers = min(6, os.cpu_count())  # Adjust based on your system
+    num_workers = min(6, cpu_count())  # Adjust based on your system
     pool = Pool(processes=num_workers, initializer=init_worker)
 
     # Flag to indicate if an interrupt was received
@@ -105,106 +188,42 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        # Open the output file once in append mode with buffering
+        # Open the output file once in append mode with line buffering
         with open("out.txt", "a", buffering=1) as file_handle:
-            # Open and read from 'decompressed.txt'
-            input_file_path = "decompressed.txt"
+            # Define the input file path
+            input_file_path = "C:/Users/DSU Student/OneDrive/School/Research/Data/Symmetric Order 21/decompressed.txt"
             if not os.path.exists(input_file_path):
                 print(f"Error: '{input_file_path}' not found.")
                 pool.close()
                 pool.join()
                 sys.exit(1)
 
-            with open(input_file_path, "r") as input_file:
-                # Initialize tqdm progress bar
-                pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="chunk")
+            # Initialize the parsing generator
+            chunk_gen = parse_decompressed_file(input_file_path, total_expected)
 
-                for line in input_file:
-                    line = line.strip()
+            # Initialize tqdm progress bar with accurate total
+            pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="chunk",
+                        mininterval=0.5, miniters=1000, unit_scale=True)
 
-                    # Print the first 100 lines for debugging
-                    """if counter < 100:
-                        print(line)
-                        counter += 1"""
+            # Create a partial function for handling results
+            handle_result_partial = partial(
+                handle_result,
+                valid=valid,
+                invalid=invalid,
+                file_handle=file_handle,
+                lock_print=lock_print
+            )
 
-                    if line.startswith("$"):
-                        # Process orbit definitions
-                        parts = line.split(maxsplit=1)
-                        key = int(parts[0][1:])  # remove the $ sign and convert to integer
-                        value = parts[1]
+            chunksize = 100
 
-                        if have_prev:
-                            soln_size = 0
-                            orbs.clear()
-                            orblens.clear()
-                            have_prev = False
+            # Use imap_unordered to process chunks as they are parsed
+            for result in pool.imap_unordered(process_chunk, chunk_gen, chunksize=chunksize):
+                handle_result_partial(result)
+                pbar.update(1)
 
-                        orbs[key] = value
-                        orblens[key] = len(value.split())
-
-                    else:
-                        # Process solution lines
-                        a = list(map(int, line.split()))
-                        total_len = 0
-
-                        # Calculate total length of orbits
-                        for x in a:
-                            if x not in orbs:
-                                raise ValueError(f"Orbit {x} not known")
-                            total_len += orblens[x]
-
-                        if have_prev:
-                            j = soln_size - 1
-                            while total_len > 0 and j >= 0:
-                                total_len -= orblens.get(soln[j], 0)
-                                j -= 1
-                            j += 1
-                        else:
-                            j = 0
-
-                        soln_size = j + len(a)
-
-                        # Update solution array
-                        for i in range(len(a)):
-                            if len(soln) > j:
-                                soln[j] = a[i]
-                            else:
-                                soln.append(a[i])
-                            j += 1
-
-                        have_prev = True
-
-                        # Convert solution to usable form and build chunks
-                        for i in range(soln_size):
-                            b = orbs[soln[i]].split()
-                            for item in b:
-                                chunk.append(item)
-                                if len(chunk) == 70:
-                                    # Submit the chunk to the multiprocessing pool
-                                    pool.apply_async(
-                                        process_chunk,
-                                        args=(chunk.copy(),),
-                                        callback=partial(handle_result, valid=valid, invalid=invalid, file_handle=file_handle, lock_print=lock_print)
-                                    )
-                                    chunk.clear()
-                                    processed += 1
-                                    pbar.update(1)
-
-                # After processing all lines, handle any remaining chunk
-                if chunk:
-                    pool.apply_async(
-                        process_chunk,
-                        args=(chunk.copy(),),
-                        callback=partial(handle_result, valid=valid, invalid=invalid, file_handle=file_handle, lock_print=lock_print)
-                    )
-                    processed += 1
-                    pbar.update(1)
-
-                # Close the progress bar
-                pbar.close()
+            pbar.close()
 
     except KeyboardInterrupt:
-        # This block will not be reached because the signal handler exits the program
         pass
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -219,8 +238,8 @@ def main():
     print(f"Valid Systems: {valid.value}")
     print(f"Invalid Systems: {invalid.value}")
     if (valid.value + invalid.value) > 0:
-       ratio = valid.value / (valid.value + invalid.value)
-       print(f"Validity Ratio: {ratio:.4f}")
+        ratio = valid.value / (valid.value + invalid.value)
+        print(f"Validity Ratio: {ratio:.4f}")
     else:
         print("No systems processed.")
 
