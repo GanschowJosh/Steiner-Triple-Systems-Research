@@ -86,7 +86,7 @@ def main():
     chunk = []
 
     # Initialize multiprocessing Pool with limited processes and initializer to handle signals
-    num_workers = min(8, os.cpu_count())  # Adjust based on your system
+    num_workers = min(6, os.cpu_count())  # Adjust based on your system
     pool = Pool(processes=num_workers, initializer=init_worker)
 
     # Flag to indicate if an interrupt was received
@@ -219,8 +219,8 @@ def main():
     print(f"Valid Systems: {valid.value}")
     print(f"Invalid Systems: {invalid.value}")
     if (valid.value + invalid.value) > 0:
-        ratio = valid.value / (valid.value + invalid.value)
-        print(f"Validity Ratio: {ratio:.4f}")
+       ratio = valid.value / (valid.value + invalid.value)
+       print(f"Validity Ratio: {ratio:.4f}")
     else:
         print("No systems processed.")
 
