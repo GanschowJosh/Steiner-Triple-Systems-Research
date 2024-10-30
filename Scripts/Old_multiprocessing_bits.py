@@ -86,7 +86,7 @@ def main():
     chunk = []
 
     # Initialize multiprocessing Pool with limited processes and initializer to handle signals
-    num_workers = min(6, os.cpu_count())  # Adjust based on your system
+    num_workers = min(4, os.cpu_count())  # Adjust based on your system
     pool = Pool(processes=num_workers, initializer=init_worker)
 
     # Flag to indicate if an interrupt was received
@@ -108,7 +108,7 @@ def main():
         # Open the output file once in append mode with buffering
         with open("out.txt", "a", buffering=1) as file_handle:
             # Open and read from 'decompressed.txt'
-            input_file_path = "decompressed.txt"
+            input_file_path = "C:/Users/DSU Student/OneDrive/School/Research/Data/Symmetric Order 21/decompressed.txt"
             if not os.path.exists(input_file_path):
                 print(f"Error: '{input_file_path}' not found.")
                 pool.close()
@@ -117,7 +117,7 @@ def main():
 
             with open(input_file_path, "r") as input_file:
                 # Initialize tqdm progress bar
-                pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="chunk")
+                pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="systems", miniters=1000, unit_scale=True)
 
                 for line in input_file:
                     line = line.strip()
@@ -189,6 +189,8 @@ def main():
                                     chunk.clear()
                                     processed += 1
                                     pbar.update(1)
+                                    """if processed % 10000 == 0:
+                                        print(f"Processed: {processed}")"""
 
                 # After processing all lines, handle any remaining chunk
                 if chunk:
