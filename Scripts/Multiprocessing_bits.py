@@ -25,15 +25,13 @@ def process_chunk(bits):
             for line in bits
         ]
 
-        # Check if it's a Steiner Triple System
+        # Check if it's an STS and process the system
         if isSteinerTripleSystem(list(range(1, 22)), currSystem):
             maxCycle = graph.processSystem(currSystem)
             if maxCycle < 18:
                 return (True, currSystem)
         return (False, None)
     except Exception as e:
-        # Optionally log the exception
-        # e.g., logging.error(f"Error processing chunk: {e}")
         return (False, None)
 
 def result_handler(future, valid, invalid, file_handle, lock_print):
@@ -73,7 +71,6 @@ def main():
     invalid = Value('i', 0)
     lock_print = Lock()
 
-    # Define total expected for progress bar (adjust as needed)
     total_expected = 62336617  # Total number of chunks expected
 
     # Variables for parsing input
@@ -90,7 +87,7 @@ def main():
     # Flag to indicate if an interrupt was received
     interrupted = False
 
-    # Define a signal handler for graceful shutdown
+    # Define a signal handler for graceful shutdown (lol doesn't work very well)
     def signal_handler(sig, frame):
         nonlocal interrupted
         interrupted = True
