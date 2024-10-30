@@ -108,7 +108,7 @@ def main():
         # Open the output file once in append mode with buffering
         with open("out.txt", "a", buffering=1) as file_handle:
             # Open and read from 'decompressed.txt'
-            input_file_path = "C:/Users/DSU Student/OneDrive/School/Research/Data/Symmetric Order 21/decompressed.txt"
+            input_file_path = "decompressed.txt"
             if not os.path.exists(input_file_path):
                 print(f"Error: '{input_file_path}' not found.")
                 pool.close()
