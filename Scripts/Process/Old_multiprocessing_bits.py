@@ -1,3 +1,7 @@
+"""
+Old version, uses simple asynchronous pool which has no limit to size, 
+meaning that it will fill up memory and swap space if the input file is too large.
+"""
 import sys
 import os
 import graph
