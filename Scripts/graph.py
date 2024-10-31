@@ -2,9 +2,6 @@ from collections import defaultdict
 from itertools import cycle, combinations
 import math
 
-# global variables
-cyclesOfLength4 = []
-
 def paschtrade(system, a, b): #returns list of lists
     newsystem = []
     for triple in system:
@@ -66,9 +63,8 @@ def cycleFromPair(a, b, system):
     
     allCycles = find_cycles(graph)
     
-    for cycle in allCycles:
-        if len(cycle) == 4:
-            cyclesOfLength4.append(cycle)
+    # cycles_of_length_4 = [cycle for cycle in allCycles if len(cycle) == 4]
+    # print(cycles_of_length_4)
 
     return max(len(cycle) for cycle in allCycles)
 
