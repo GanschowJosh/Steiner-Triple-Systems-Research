@@ -20,13 +20,10 @@ def process_chunk(bits):
     """
     try:
         # Convert bits to currSystem
-        currSystem = []
-        for line in bits:
-            currBlock = []
-            for char in range(len(line)):
-                if line[char] == "1":
-                    currBlock.append(char + 1)
-            currSystem.append(set(currBlock))
+        currSystem = [
+            {char + 1 for char, bit in enumerate(line) if bit == "1"}
+            for line in bits
+        ]
 
         # Check if it's a Steiner Triple System
         if isSteinerTripleSystem(list(range(1, 22)), currSystem):
@@ -70,8 +67,8 @@ def init_worker():
 
 def main():
     # Directory containing the split text files
-    input_dir = "C:/Users/DSU Student/OneDrive/School/Research/Data/Symmetric Order 21/split_files"  # Change this to your input directory
-    output_file = "out.txt"  # Output file to store valid systems
+    input_dir = "C:/Users/DSU Student/OneDrive/School/Research/Data/Symmetric Order 21/split_files"  
+    output_file = "out2.txt"  # Output file to store valid systems
     total_expected = 62336617  # Total number of systems expected
 
     # Find all .txt files in the input directory

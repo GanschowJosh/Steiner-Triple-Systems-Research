@@ -82,12 +82,16 @@ def main():
     chunk = []
     processed = 0
 
-    num_workers = max(1, os.cpu_count() - 1)  # Reserve one CPU for the main process
+    num_workers = max(1, min(os.cpu_count() - 1, 12))
+
+    max_concurrent_futures = 10000
+
+    active_futures = set()
 
     # Flag to indicate if an interrupt was received
     interrupted = False
 
-    # Define a signal handler for graceful shutdown (lol doesn't work very well)
+    # Define a signal handler for graceful shutdown (still doesn't work lol)
     def signal_handler(sig, frame):
         nonlocal interrupted
         interrupted = True
@@ -100,19 +104,16 @@ def main():
 
     try:
         with open("out.txt", "a", buffering=1) as file_handle:
-            input_file_path = "decompressed.txt"
+            input_file_path = "../Data/Symmetric Order 21/decompressed.txt"
             if not os.path.exists(input_file_path):
                 print(f"Error: '{input_file_path}' not found.")
                 sys.exit(1)
 
             with open(input_file_path, "r") as input_file:
-                # Initialize tqdm progress bar
                 pbar = tqdm(total=total_expected, desc="Processing Chunks", unit="systems", miniters=1000, unit_scale=True)
 
                 with ProcessPoolExecutor(max_workers=num_workers, initializer=init_worker) as executor:
-                    # Keep track of futures to handle results
-                    futures = []
-
+                    # Keep track of active futures
                     for line in input_file:
                         line = line.strip()
 
@@ -175,7 +176,7 @@ def main():
 
                                         # Submit the batch to the process pool
                                         future = executor.submit(process_chunk, batch)
-                                        futures.append(future)
+                                        active_futures.add(future)
 
                                         # Attach a callback to handle the result
                                         future.add_done_callback(
@@ -185,21 +186,25 @@ def main():
                                         processed += 1
                                         pbar.update(1)
 
+                                        # If maximum concurrent futures reached, wait for some to complete
+                                        if len(active_futures) >= max_concurrent_futures:
+                                            done, active_futures = wait(active_futures, return_when='FIRST_COMPLETED')
+                    
                     # After processing all lines, handle any remaining chunk
                     if chunk:
                         batch = chunk.copy()
                         chunk.clear()
                         future = executor.submit(process_chunk, batch)
-                        futures.append(future)
+                        active_futures.add(future)
                         future.add_done_callback(
                             partial(result_handler, valid=valid, invalid=invalid, file_handle=file_handle, lock_print=lock_print)
                         )
                         processed += 1
                         pbar.update(1)
 
-                    # Wait for all futures to complete
-                    for future in as_completed(futures):
-                        pass
+                    # Wait for all remaining futures to complete
+                    while active_futures:
+                        done, active_futures = wait(active_futures, return_when='FIRST_COMPLETED')
 
                     # Close the progress bar
                     pbar.close()
@@ -222,4 +227,5 @@ def main():
                 print("No systems processed.")
 
 if __name__ == "__main__":
+    from concurrent.futures import wait  # Import here to avoid issues with multiprocessing
     main()
