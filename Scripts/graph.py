@@ -34,7 +34,9 @@ def cycleFromPair(a, b, system):
     return find_max_cycle(graph_dict)
 
 def processSystem(system):
-    numNodes = int((1+math.sqrt(1+24*(len(system))))/2)
+    #cute usage of the quadratic formula, but not needed
+    #numNodes = int((1+math.sqrt(1+24*(len(system))))/2)
+    numNodes = max(max(triple) for triple in system)
     pairs = combinations(list(i+1 for i in range(numNodes)), 2)
     cycleMax = 0
     for a, b in pairs:
