@@ -1,15 +1,31 @@
-Handbook of Combinatorial Design
-.vscode
-__pycache__
-CycleGeneration
-latin_mc8.txt
-Interesting Papers
-Notes
-Symmetric Order 21
-test.py
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local research inputs and generated outputs
+Data/
+Interesting Papers/
+Notes/
+Results/CycleGeneration/
+Results/Paper/
 out.txt
-Scripts/C++ Implementation
+latin_mc8.txt
+
+# Large or local-only implementation artifacts
+Scripts/C++ Implementation/
 Scripts/anti_pasch_sts13.txt
 Scripts/Example_Anti-Pasch_Configuration.txt
 Scripts/file
-Results/Paper
+Scripts/test.py
+Scripts/Process/test.py
+
+# Raw presentation recordings
+Results/Presentation/*.mp4
+Results/Presentation/local-media/
