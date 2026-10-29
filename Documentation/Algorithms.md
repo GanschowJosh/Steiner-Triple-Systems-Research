@@ -1,62 +1,69 @@
-# Algorithms in the Steiner Triple Systems Project
-## Overview
-This document outlines the primary algorithms implemented in the project.
-## 1. Revised Stinson's Algorithm
-### Purpose
-Revised Stinson's Algorithm is utilized for generating valid Steiner Triple Systems based on a specific order (v)
-### Description
-#### Key Properties
+# Implemented algorithms
 
-- **Block and Point Distribution**: In an STS(v), each point appears in exactly 
-  $r = \frac{v-1}{2}$ 
-  blocks, where $( |B| = \frac{v(v-1)}{6} )$ represents the total number of blocks. For an STS to exist, \( v \) must satisfy $v \equiv 1$ or $3 \mod 6$.
+## Revised Stinson generation
 
-- **Exponential Growth**: The number of non-isomorphic STS(v) on a specific set grows exponentially, making efficient construction methods valuable.
+`Scripts/STSGenerator.py` implements the revised Stinson hill-climbing
+algorithm for constructing an STS(n).
 
-#### Problem Formulation
+The generator maintains, for every point, a compact collection of *live pairs*
+that have not yet been covered by a block. A switching step selects a live
+point and two of its live neighbors. If their pair is also uncovered, the
+three points form a new block. Otherwise, the conflicting block is exchanged
+and its displaced pairs become live again. Switching continues until the
+system contains
 
-The task of constructing an STS(v) can be framed as a combinatorial optimization problem:
+```text
+n(n - 1) / 6
+```
 
-- **Instance**:
-  - A positive integer $v \equiv 1$ or $3 \mod 6$.
-  - A finite set $V$ such that $|V| = v$.
+blocks. The implementation is effective in practice, although the randomized
+hill-climbing procedure does not provide a theoretical termination guarantee.
 
-- **Objective**: Maximize the number of blocks ($|B|$) such that $(V, B)$ forms a Partial Steiner Triple System (PSTS).
+## Validation
 
-#### Heuristic Approach
+`isSteinerTripleSystem` verifies that:
 
-The algorithm employs a heuristic named `SWITCH` to iteratively refine the PSTS. This heuristic identifies live points and pairs, facilitating the addition of new blocks while maintaining or increasing the overall size of the system.
+1. the order is congruent to 1 or 3 modulo 6; and
+2. every unordered pair of points occurs in exactly one block.
 
-The `SWITCH` process involves selecting live points and exploring possible pair combinations. If a new block can be formed, it is added to the system; otherwise, existing blocks may be exchanged to maintain the structure.
+This direct validator favors clarity over asymptotic efficiency and is useful
+for generated examples and smoke tests.
 
-#### Algorithm Overview
+## Cycle graphs and circumference
 
-1. **Initialization**: Begin with an empty block set and initialize necessary data structures to track live points and pairs.
-   
-2. **Iterative Improvement**: Apply the `SWITCH` heuristic repeatedly to enhance the current PSTS until the maximum size is reached, ensuring all criteria for a valid STS are satisfied.
+`Scripts/graph.py` constructs the cycle graph associated with each unordered
+pair of points. For a valid STS, each such graph is 2-regular, so its connected
+components are cycles. NetworkX is used to obtain a cycle basis, and the
+largest observed cycle length is returned as the system's circumference.
 
-3. **Output**: Upon completion, the algorithm outputs the constructed STS(v), represented as $(V, B)$.
+An STS(n) is antiperfect precisely when the returned circumference is less
+than `n - 3`.
 
-This algorithm is efficient in practice, often successfully generating a valid STS(v) quickly, even though there is no theoretical guarantee of termination.
+## Pasch detection and trades
 
-## 2. Graph Cycle Analysis
-### Purpose
-This algorithm analyzes the graph representation of a Steiner Triple System to identify cycles, specifically targeting the longest cycle (circumference)
+A Pasch configuration consists of four blocks on six points in which each
+point occurs twice. `Scripts/Pasch_checker.py` indexes blocks by point and
+searches compatible block combinations to determine whether a system contains
+such a configuration.
 
-### Description
-The cycle analysis is performed using depth-first search (DFS) to explore the graph created from the triples. The algorithm identifies all cycles and records those of length 4, which is of particular interest as this forms a Pasch configuration.
+The experimental programs in `Scripts/Process` also explore Pasch trades,
+which replace one Pasch configuration with its complementary four blocks.
+These trades move between STS configurations while preserving the defining
+pair-incidence property.
 
-### Key functions
-- `find_cycles(graph)`: Performs DFS to discover all cycles within the given graph.
-- `cycleFromPair(a, b, system)`: Generates the graph from pairs and finds cycles that include the specified pair of elements
+## Large-catalog processing
 
-## 3. Pasch Trade Algorithm
-### Purpose
-The Pasch Trade algorithm modifies existing Steiner Triple Systems by swapping elements within triples to explore new configurations.
+`Scripts/Multiprocessing_bits.py` processes a compressed representation of
+62,336,617 order-21 systems with prescribed automorphism groups. It rebuilds
+systems from orbit data, validates them, computes their circumference, and
+writes qualifying systems incrementally. A bounded process pool permits the
+catalog to be analyzed without retaining every reconstructed system in memory.
 
-### Description
-The algorithm iterates through valid Pasch pairs of elements within the system, applying trades to create new triples. It checks whether the newly generated system is a valid STS and tracks if that new configuration has a smaller circumference.
+The catalog itself is external research data and is intentionally excluded
+from this repository.
 
-### Key Functions
-- `paschtrade(system, a, b)`: Generates a new system based on swapping elements in the triples
-- `performPaschTrades(system, pairs)`: Iterates through pairs, applying the Pasch trade and recording results.
+## Cycle vectors
+
+`Scripts/STS21_vectorization.py` summarizes the cycle structure of order-21
+systems as vectors. These vectors support grouping and comparison without
+retaining every individual cycle graph.
