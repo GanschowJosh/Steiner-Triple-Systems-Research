@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite the associated paper.
+title: Steiner Triple Systems Research
+type: software
+authors:
+  - family-names: Ganschow
+    given-names: Joshua
+repository-code: https://github.com/GanschowJosh/Steiner-Triple-Systems-Research
+license: GPL-3.0-only
+preferred-citation:
+  type: article
+  title: Small antiperfect Steiner triple systems
+  authors:
+    - family-names: Ganschow
+      given-names: Joshua
+    - family-names: Schroeder
+      given-names: J. Z.
+  journal: Discrete Mathematics
+  volume: "349"
+  year: 2026
+  doi: 10.1016/j.disc.2026.115061
+
