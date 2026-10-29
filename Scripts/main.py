@@ -1,13 +1,28 @@
-"""
-Main file for simple generation of a given number 
-of Steiner Triple Systems of a given order
-"""
-from STSGenerator import generateSteinerTripleSystem, isSteinerTripleSystem
+"""Interactively generate one or more Steiner triple systems."""
 
-order = int(input("What order of STS would you like to generate? "))
-numSystems = int(input("How many systems would you like to generate? "))
+from STSGenerator import generateSteinerTripleSystem
 
-if numSystems > 0:
-    for i in range(numSystems):
-        STS = generateSteinerTripleSystem(order)
-        print(STS, end=f"\n{"="*20}\n")
+
+def main():
+    try:
+        order = int(input("What order of STS would you like to generate? "))
+        num_systems = int(input("How many systems would you like to generate? "))
+    except ValueError:
+        print("Order and number of systems must be integers.")
+        return
+
+    if num_systems < 1:
+        print("Number of systems must be positive.")
+        return
+
+    try:
+        for _ in range(num_systems):
+            system = generateSteinerTripleSystem(order)
+            print(system)
+            print("=" * 20)
+    except ValueError as error:
+        print(error)
+
+
+if __name__ == "__main__":
+    main()
